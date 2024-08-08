@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".SecondFragment">
+
+    <EditText
+        android:id="@+id/itemOne"
+        android:layout_width="100dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="64dp"
+        android:ems="10"
+        android:hint="Item Name"
+        android:inputType="textPersonName"
+        app:layout_constraintBottom_toBottomOf="@+id/availableOne"
+        app:layout_constraintStart_toEndOf="@+id/availableOne" />
+
+    <Button
+        android:id="@+id/button_second"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="@string/previous"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/joinCodeSecond"
+        android:layout_width="161dp"
+        android:layout_height="32dp"
+        android:layout_marginTop="16dp"
+        android:text="Join Code:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/newSession"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="@string/newsession"
+        app:layout_constraintEnd_toEndOf="@+id/joinCodeSecond"
+        app:layout_constraintStart_toStartOf="@+id/joinCodeSecond"
+        app:layout_constraintTop_toBottomOf="@+id/joinCodeSecond" />
+
+    <EditText
+        android:id="@+id/availableOne"
+        android:layout_width="68dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="48dp"
+        android:ems="10"
+        android:hint="Available"
+        android:inputType="number"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/newSession" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="Number Available"
+        app:layout_constraintBottom_toTopOf="@+id/availableOne"
+        app:layout_constraintEnd_toEndOf="@+id/availableOne"
+        app:layout_constraintHorizontal_bias="0.435"
+        app:layout_constraintStart_toStartOf="@+id/availableOne" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="Item Name"
+        app:layout_constraintBottom_toTopOf="@+id/itemOne"
+        app:layout_constraintEnd_toEndOf="@+id/itemOne"
+        app:layout_constraintStart_toStartOf="@+id/itemOne" />
+
+    <EditText
+        android:id="@+id/availableTwo"
+        android:layout_width="68dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Available"
+        android:inputType="number"
+        android:minHeight="48dp"
+        app:layout_constraintStart_toStartOf="@+id/availableOne"
+        app:layout_constraintTop_toBottomOf="@+id/availableOne" />
+
+    <EditText
+        android:id="@+id/availableThree"
+        android:layout_width="68dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Available"
+        android:inputType="number"
+        android:minHeight="48dp"
+        app:layout_constraintStart_toStartOf="@+id/availableTwo"
+        app:layout_constraintTop_toBottomOf="@+id/availableTwo" />
+
+    <EditText
+        android:id="@+id/availableFour"
+        android:layout_width="68dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Available"
+        android:inputType="number"
+        app:layout_constraintStart_toStartOf="@+id/availableThree"
+        app:layout_constraintTop_toBottomOf="@+id/availableThree" />
+
+    <EditText
+        android:id="@+id/availableFive"
+        android:layout_width="68dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Available"
+        android:inputType="number"
+        app:layout_constraintStart_toStartOf="@+id/availableFour"
+        app:layout_constraintTop_toBottomOf="@+id/availableFour" />
+
+    <EditText
+        android:id="@+id/availableSix"
+        android:layout_width="68dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Available"
+        android:inputType="number"
+        app:layout_constraintStart_toStartOf="@+id/availableFive"
+        app:layout_constraintTop_toBottomOf="@+id/availableFive" />
+
+    <EditText
+        android:id="@+id/availableSeven"
+        android:layout_width="68dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Available"
+        android:inputType="number"
+        android:minHeight="48dp"
+        app:layout_constraintStart_toStartOf="@+id/availableSix"
+        app:layout_constraintTop_toBottomOf="@+id/availableSix" />
+
+    <EditText
+        android:id="@+id/availableEight"
+        android:layout_width="68dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Available"
+        android:inputType="number"
+        app:layout_constraintStart_toStartOf="@+id/availableSeven"
+        app:layout_constraintTop_toBottomOf="@+id/availableSeven" />
+
+    <EditText
+        android:id="@+id/itemTwo"
+        android:layout_width="100dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Item Name"
+        android:inputType="textPersonName"
+        app:layout_constraintStart_toStartOf="@+id/itemOne"
+        app:layout_constraintTop_toBottomOf="@+id/itemOne" />
+
+    <EditText
+        android:id="@+id/itemThree"
+        android:layout_width="100dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Item Name"
+        android:inputType="textPersonName"
+        app:layout_constraintStart_toStartOf="@+id/itemTwo"
+        app:layout_constraintTop_toBottomOf="@+id/itemTwo" />
+
+    <EditText
+        android:id="@+id/itemFour"
+        android:layout_width="100dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Item Name"
+        android:inputType="textPersonName"
+        app:layout_constraintStart_toStartOf="@+id/itemThree"
+        app:layout_constraintTop_toBottomOf="@+id/itemThree" />
+
+    <EditText
+        android:id="@+id/itemFive"
+        android:layout_width="100dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Item Name"
+        android:inputType="textPersonName"
+        app:layout_constraintStart_toStartOf="@+id/itemFour"
+        app:layout_constraintTop_toBottomOf="@+id/itemFour" />
+
+    <EditText
+        android:id="@+id/itemSix"
+        android:layout_width="100dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Item Name"
+        android:inputType="textPersonName"
+        app:layout_constraintStart_toStartOf="@+id/itemFive"
+        app:layout_constraintTop_toBottomOf="@+id/itemFive" />
+
+    <EditText
+        android:id="@+id/itemSeven"
+        android:layout_width="100dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Item Name"
+        android:inputType="textPersonName"
+        app:layout_constraintStart_toStartOf="@+id/itemSix"
+        app:layout_constraintTop_toBottomOf="@+id/itemSix" />
+
+    <EditText
+        android:id="@+id/itemEight"
+        android:layout_width="100dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="Item Name"
+        android:inputType="textPersonName"
+        app:layout_constraintStart_toStartOf="@+id/itemSeven"
+        app:layout_constraintTop_toBottomOf="@+id/itemSeven" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
