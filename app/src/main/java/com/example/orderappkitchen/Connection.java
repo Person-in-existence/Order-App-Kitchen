@@ -23,10 +23,12 @@ public class Connection {
     public int clientIdempotencyToken = -1;
     public int idempotencyToken;
 
-    public Connection(Socket socket) {
+    public Connection(Socket socket, Server parent) {
         this.socket = socket;
+        this.parent = parent;
     }
     public void monitor() {
+        System.out.println("Monitor Started");
         try {
             InputStream inputStream = socket.getInputStream();
             DataInputStream in = new DataInputStream(inputStream);
@@ -63,7 +65,7 @@ public class Connection {
                     }
 
                 } catch (Exception e) {
-                    Log.e("OrderAppKitchen Networking", "Handling packet failed. " + Arrays.toString(e.getStackTrace()));
+                    Log.e("OrderAppKitchen Networking", "Handling packet failed. " + Arrays.toString(e.getStackTrace()) + " " + e.getClass());
                 }
             }
         } catch (IOException e) {
@@ -83,6 +85,7 @@ public class Connection {
 
         // Send packet header
         // Version Number
+        Log.d("OrderAppKitchen", "Type 0 response start");
         writeShort(out, NETWORK_VERSION_NUMBER);
         // Packet type: 2
         writeShort(out, (short) 2);
@@ -99,6 +102,7 @@ public class Connection {
             // Item Quantity
             writeInt(out, quantities.get(index));
         }
+        Log.d("OrderAppKitchen", "Type 0 response end");
 
     }
     private void handleType1(DataOutputStream out, DataInputStream in, int incomingIdempotencyToken) throws IOException {
@@ -253,7 +257,7 @@ public class Connection {
     }
     public void safeWait(int ms) {
         try {
-            wait(ms);
+            Thread.sleep(ms);
         } catch (InterruptedException e) {
             Log.e("OrderAppKitchen Networking", "Wait fail " + Arrays.toString(e.getStackTrace()));
         }

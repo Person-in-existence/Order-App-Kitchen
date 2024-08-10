@@ -34,10 +34,10 @@ public class Server extends Thread {
                 Socket current = socket.accept();
                 System.out.println("Connection accepted");
                 if (current != null) {
-                    Connection connection = new Connection(current);
+                    Connection connection = new Connection(current, this);
                     connections.add(connection);
                     // Run the monitor subprogram on a separate thread.
-                    new Thread(connection::monitor);
+                    new Thread(connection::monitor).start();
                 }
 
             }catch (SocketTimeoutException s) {
