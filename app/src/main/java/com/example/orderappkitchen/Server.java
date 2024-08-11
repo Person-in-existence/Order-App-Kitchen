@@ -34,10 +34,16 @@ public class Server extends Thread {
                 Socket current = socket.accept();
                 System.out.println("Connection accepted");
                 if (current != null) {
-                    Connection connection = new Connection(current, this);
-                    connections.add(connection);
-                    // Run the monitor subprogram on a separate thread.
-                    new Thread(connection::monitor).start();
+                    // Check if there is a connection for this address
+                    int index = getConnection(current.getInetAddress());
+                    if (index == -1) {
+                        Connection connection = new Connection(current, this);
+                        connections.add(connection);
+                        // Run the monitor subprogram on a separate thread.
+                        new Thread(connection::monitor).start();
+                    } else {
+                        connections.get(index).reconnect(current);
+                    }
                 }
 
             }catch (SocketTimeoutException s) {
@@ -62,5 +68,15 @@ public class Server extends Thread {
         order.setItems(parent.getItems());
         return order;
     }
-
+    public void disconnect(Connection toDisconnect) {
+        connections.remove(toDisconnect);
+    }
+    public int getConnection(InetAddress address) {
+        for (int index = 0; index < connections.size(); index++) {
+            if (connections.get(index).address == address) {
+                return index;
+            }
+        }
+        return -1;
+    }
 }

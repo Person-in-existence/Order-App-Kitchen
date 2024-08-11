@@ -22,10 +22,12 @@ public class Connection {
     public Socket socket;
     public int clientIdempotencyToken = -1;
     public int idempotencyToken;
+    public InetAddress address;
 
     public Connection(Socket socket, Server parent) {
         this.socket = socket;
         this.parent = parent;
+        this.address = socket.getInetAddress();
     }
     public void monitor() {
         System.out.println("Monitor Started");
@@ -34,8 +36,7 @@ public class Connection {
             DataInputStream in = new DataInputStream(inputStream);
             OutputStream outputStream = socket.getOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
-            boolean running = true;
-            while (running) {
+            while (true) {
                 try {
                     // Check (and wait) for incoming packets
                     if (waitAvailable(in)) { // waitAvailable returns true if something arrives before the timeout
@@ -58,8 +59,9 @@ public class Connection {
                                 Log.e("OrderAppKitchen Networking", "Unexpected type 4 incoming packet");
                                 break;
                             case 5: // Client disconnecting from server (client->server)
-                                running = false;
-                                break;
+                                parent.disconnect(this);
+                                socket.close();
+                                return;
                         }
 
                     }
@@ -268,6 +270,9 @@ public class Connection {
         } catch (IOException e) {
             Log.e("OrderAppKitchen Networking", "Clearing failed: "+ Arrays.toString(e.getStackTrace()));
         }
+    }
+    public void reconnect(Socket socket) {
+        this.socket = socket;
     }
 
 }
