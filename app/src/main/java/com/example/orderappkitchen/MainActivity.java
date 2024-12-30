@@ -19,14 +19,18 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+
+import networking.Network;
+import networking.SessionData;
 
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
-    public ArrayList<Order> orders = new ArrayList<>();
-    public ArrayList<String> items = new ArrayList<>();
-    public ArrayList<Integer> available = new ArrayList<>();
+    public volatile ArrayList<Order> orders = new ArrayList<>();
+    public volatile ArrayList<String> items = new ArrayList<>();
+    public volatile ArrayList<Integer> available = new ArrayList<>();
     public FirstFragment fragment;
     public FragmentManager manager;
 
@@ -90,28 +94,75 @@ public class MainActivity extends AppCompatActivity {
         return NavigationUI.navigateUp(navController, appBarConfiguration)
                 || super.onSupportNavigateUp();
     }
-    public static String getJoinCode() {
+    public SessionData getOrderData() {
+        int itemSize = items.size();
+        String[] itemArray = new String[itemSize];
+        for (int index = 0; index < itemSize; index++) {
+            itemArray[index] = items.get(index);
+        }
+
+        int availableSize = available.size();
+        int[] availableArray = new int[availableSize];
+        for (int index = 0; index < availableSize; index++) {
+            availableArray[index] = available.get(index);
+        }
+        return new SessionData(itemArray, availableArray);
+    }
+
+    public void setOrderData(SessionData sessionData) {
+        items = new ArrayList<>(Arrays.asList(sessionData.names));
+        ArrayList<Integer> newAvailable = new ArrayList<>(available);
+        for (int item : sessionData.available) {
+            newAvailable.add(item);
+        }
+        available = newAvailable;
+    }
+
+    public void removeOrder(int orderNumber) {
+        orders.remove(orderNumber);
+        if (fragment != null) {
+            Server.wait(500);
+            fragment.showOrder(orders);
+        }
+    }
+
+    protected void addOrder(Order order) {
+        orders.add(order);
+        if (fragment != null) {
+            Server.wait(2);
+            fragment.showOrder(orders);
+            fragment.showOrder(orders);
+        }
+        for (int i = 0; i < 8; i++) {
+            available.set(i, available.get(i) - order.getAmounts().get(i));
+        }
+    }
+
+    protected static String getJoinCode() {
         try {
-            IpCode getIp = new IpCode();
-            Thread thread = new Thread(getIp);
-            thread.start();
-            thread.join(10000);
-            String ip = getIp.ip2;
-            Log.d("MainActivity",ip);
-            if (ip != null) {
-                String[] bits = ip.split("\\.");
-                Log.d("JoinCodem", bits[3]);
+            final String[] ip = new String[1];
+            Thread getIPThread = new Thread() {
+                public void run() {
+                    ip[0] = Network.getIPAddress();
+                }
+            };
+            getIPThread.start();
+            getIPThread.join(10000);
+            Log.d("MainActivity", ip[0]);
+            if (ip[0] != null) {
+                String[] bits = ip[0].split("\\.");
+                Log.d("JoinCode", bits[3]);
                 return bits[3];
             } else {
-                Log.d("JoinCodem", "IP was null");
+                Log.d("JoinCode", "IP was null");
                 return "";
             }
         } catch (Exception e) {
-            Log.d("JoinCodem", String.valueOf(e));
+            Log.d("JoinCode", String.valueOf(e));
             return "";
         }
     }
-    public ArrayList<Integer> getTotal() {
+    protected ArrayList<Integer> getTotal() {
         ArrayList<Integer> total = new ArrayList<>();
         for (int z = 0; z<8; z++) {
             total.add(0);
@@ -124,50 +175,34 @@ public class MainActivity extends AppCompatActivity {
         }
         return total;
     }
-    public ArrayList<String> getItems() {
+    protected ArrayList<String> getItems() {
         return items;
     }
-    public ArrayList<Integer> getAvailable() {
+    protected ArrayList<Integer> getAvailable() {
         return available;
     }
-    public void addOrder(Order order) {
-        orders.add(order);
+
+    protected void setFragment(FirstFragment newFragment) {fragment = newFragment; updateOrders();}
+    protected void updateOrders() {
         if (fragment != null) {
-            Server.wait(2);
-            fragment.showOrder(orders);
-            fragment.showOrder(orders);
-        }
-        for (int i = 0; i < 8; i++) {
-            available.set(i, available.get(i) - order.getAmounts().get(i));
-        }
-    }
-    public void setFragment(FirstFragment newFragment) {fragment = newFragment; updateOrders();}
-    public void updateOrders() {
-        if (fragment != null) {
-            if (orders.size() > 0) {
+            if (!orders.isEmpty()) {
                 fragment.showOrder(orders);
             }
         }
     }
-    public void startSession(ArrayList<Integer> newAvailable, ArrayList<String> newItems) {
+    protected void startSession(ArrayList<Integer> newAvailable, ArrayList<String> newItems) {
         available = newAvailable;
         items = newItems;
-        if (orders.size() > 0) {
+        if (!orders.isEmpty()) {
             for (int i = 0; i < orders.size(); i++) {
                 orders.get(i).setItems(items);
             }
         }
     }
-    public void removeOrder(int orderNumber) {
-        orders.remove(orderNumber);
-        if (fragment != null) {
-            Server.wait(500);
-            fragment.showOrder(orders);
-        }
-    }
-    public boolean hasItems() {return items.size() > 0;}
-    public boolean hasAvailables() {return available.size() > 0;}
-    public void showSnackbar(String message) {
+
+    protected boolean hasItems() {return !items.isEmpty();}
+    protected boolean hasAvailables() {return !available.isEmpty();}
+    protected void showSnackbar(String message) {
         Snackbar.make(binding.toolbar, message, Snackbar.LENGTH_LONG)
                 .setAction(message, null).show();
     }

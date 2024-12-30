@@ -98,6 +98,10 @@ public class SecondFragment extends Fragment {
             }
         }
         binding.joinCodeSecond.setText("Join Code: " + joinCode);
+        // Add a listener to the external server button
+        binding.externalServerButton.setOnClickListener(view1 -> {
+            NavHostFragment.findNavController(this).navigate(R.id.action_SecondFragment_to_externalServerFragment);
+        });
     }
 
     @Override

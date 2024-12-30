@@ -2,10 +2,16 @@ package com.example.orderappkitchen;
 
 import java.util.ArrayList;
 
+@Deprecated(since = "To be rewritten (uses an ArrayList as a fixed size array?) + needs better order tracking.")
 public class Order {
     public ArrayList<Integer> orders;
     public ArrayList<String> items;
     public String name;
+    public Order(ArrayList<Integer> orders, ArrayList<String> items, String name) {
+        this.orders = orders;
+        this.items = items;
+        this.name = name;
+    }
     public boolean setItems(ArrayList<String> itemsIn) {
         if (itemsIn.size() == 8) {
             items = itemsIn;
@@ -13,23 +19,6 @@ public class Order {
         } else {
             return false;
         }
-    }
-    public boolean setOrders(ArrayList<Integer> ordersIn) {
-        if (ordersIn.size() == 8) {
-            orders = ordersIn;
-            return true;
-        } else {
-            return false;
-        }
-    }
-    public boolean setName(String nameIn) {
-        if (nameIn != null)  {
-            if (nameIn != "") {
-                name = nameIn;
-                return true;
-            }
-        }
-        return false;
     }
     public String getText() {
         String toSend = name + ": ";

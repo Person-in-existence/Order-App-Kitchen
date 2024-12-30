@@ -16,11 +16,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
-
+@Deprecated
 public class Server extends Thread {
-    public ServerSocket socket;
+    private ServerSocket socket;
     public MainActivity parent;
-    public ArrayList<Connection> connections = new ArrayList<>();
+    private final ArrayList<Connection> connections = new ArrayList<>();
     public void run() {
         try {
             socket = new ServerSocket(65433);
@@ -62,11 +62,7 @@ public class Server extends Thread {
         }
     }
     public static Order newOrder(String name, ArrayList<Integer> ordered, MainActivity parent) {
-        Order order = new Order();
-        order.setOrders(ordered);
-        order.setName(name);
-        order.setItems(parent.getItems());
-        return order;
+        return new Order(ordered, parent.getItems(), name);
     }
     public void disconnect(Connection toDisconnect) {
         connections.remove(toDisconnect);

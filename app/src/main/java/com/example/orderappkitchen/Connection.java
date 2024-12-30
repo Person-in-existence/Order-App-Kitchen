@@ -14,14 +14,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
+@Deprecated
 public class Connection {
     public Server parent;
     public static final short TIMEOUT = 1000; // one second (ms)
-    public static final short NETWORK_VERSION_NUMBER = 1;
+    public static final short NETWORK_VERSION_NUMBER = 2;
     public Socket socket;
     public int clientIdempotencyToken = -1;
-    public int idempotencyToken;
     public InetAddress address;
 
     public Connection(Socket socket, Server parent) {
