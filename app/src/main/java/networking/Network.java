@@ -1,5 +1,7 @@
 package networking;
 
+import android.util.Log;
+
 import androidx.annotation.Nullable;
 
 import com.example.orderappkitchen.MainActivity;
@@ -48,31 +50,39 @@ public class Network {
     }
 
     public static void removeOrderByID(long orderID) {
-        // TODO: WRITE
+        activity.removeOrderByID(orderID);
     }
     public static void setSessionData(SessionData data) {
-
+        activity.setSessionData(data);
     }
 
     public static void setOrderData(OrderData data) {
-        // TODO: WRITE
+        activity.setOrderData(data);
     }
     public static void addOrder(Order order) {
-        // TODO: WRITE
+        activity.addOrder(order);
     }
-    public static boolean addOrderChecksum(Order order, int checksum) {
-        // TODO: WRITE
-        return false;
+    public static boolean addOrderChecksum(Order order, int receivedChecksum) {
+        // Add the order
+        addOrder(order);
+
+        // Calculate checksum
+        int actualChecksum = activity.makeChecksum();
+
+        return receivedChecksum == actualChecksum;
     }
-    public static void removeOrder(long orderID) {
-        // TODO: WRITE
-    }
-    public static boolean removeOrderChecksum(long orderID, int checksum) {
-        // TODO: WRITE
-        return false;
+    public static boolean removeOrderChecksum(long orderID, int receivedChecksum) {
+        // Remove the order
+        removeOrderByID(orderID);
+
+        // Check checksum
+        int actualChecksum = activity.makeChecksum();
+
+        return receivedChecksum == actualChecksum;
     }
     public static boolean addRemoveItemsByAmount(Order amounts, int checksum) {
-        // TODO: WRITE
+        Log.w("networking.Network", "Received call to addRemoveItemsByAmount, not expected on a kitchen device. assert/return false");
+        assert false;
         return false;
     }
     public static OrderData getOrderData() {

@@ -1,6 +1,7 @@
 package com.example.orderappkitchen;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +12,7 @@ import androidx.fragment.app.Fragment;
 import com.example.orderappkitchen.databinding.FragmentExternalServerBinding;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import networking.Device;
 import networking.Network;
@@ -50,9 +52,13 @@ public class ExternalServerFragment extends Fragment {
         binding.scanProgressBar.setProgress(percent);
     }
     public void setDevices(ArrayList<Device> devices) {
-        requireActivity().runOnUiThread(()->{
-            binding.scanProgressBar.setVisibility(View.GONE);
+        try {
+            requireActivity().runOnUiThread(() -> {
+                binding.scanProgressBar.setVisibility(View.GONE);
 
-        });
+            });
+        } catch (IllegalStateException e) {
+            Log.w("ExternalServerFragment", "Error in setdevices - " + Arrays.toString(e.getStackTrace()));
+        }
     }
 }

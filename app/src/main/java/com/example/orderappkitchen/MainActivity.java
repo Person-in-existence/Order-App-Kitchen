@@ -21,6 +21,7 @@ import android.view.MenuItem;
 import java.util.ArrayList;
 
 import networking.Network;
+import networking.OrderData;
 import networking.SessionData;
 import networking.Order;
 
@@ -112,6 +113,23 @@ public class MainActivity extends AppCompatActivity {
             newItems.add(item.name);
             newAvailable.add(item.quantity);
         }
+        this.items = newItems;
+        this.available = newAvailable;
+        // Update orders (so they reset if names have changed etc)
+        runOnUiThread(()->{
+            if (fragment != null) {
+                fragment.showOrders(orders);
+            }
+        });
+    }
+
+    public OrderData getOrderData() {
+        return new OrderData(orders);
+    }
+
+    public void setOrderData(OrderData data) {
+        this.orders = data.orders;
+
         runOnUiThread(()->{
             if (fragment != null) {
                 fragment.showOrders(orders);
@@ -132,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
         for (int index = 0; index < orders.size(); index++) {
             if (orders.get(index).orderID == orderID) {
                 orders.remove(index);
-                // Break so we dont go over the length of the list
+                // Break so we dont go over the length of the list once we have found it
                 break;
             }
         }
