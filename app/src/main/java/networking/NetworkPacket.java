@@ -2,6 +2,8 @@ package networking;
 
 import java.net.InetAddress;
 
+import networking.packets.Packet;
+
 public class NetworkPacket {
     public InetAddress sender;
     public InetAddress receiver;

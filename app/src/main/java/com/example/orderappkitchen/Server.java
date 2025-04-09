@@ -1,21 +1,13 @@
 package com.example.orderappkitchen;
 
-import static android.app.PendingIntent.getActivity;
 
 import android.util.Log;
 
-import androidx.fragment.app.Fragment;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Locale;
-import java.util.Objects;
+import networking.Order;
 @Deprecated
 public class Server extends Thread {
     private ServerSocket socket;
@@ -60,9 +52,6 @@ public class Server extends Thread {
         } catch (Exception e) {
             Log.d("ExceptionServer", "Waiting.");
         }
-    }
-    public static Order newOrder(String name, ArrayList<Integer> ordered, MainActivity parent) {
-        return new Order(ordered, parent.getItems(), name);
     }
     public void disconnect(Connection toDisconnect) {
         connections.remove(toDisconnect);

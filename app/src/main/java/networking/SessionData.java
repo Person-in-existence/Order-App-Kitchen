@@ -1,11 +1,22 @@
 package networking;
 
 
+import android.util.Log;
+
+import networking.packets.Packet;
+
 public class SessionData {
-    public final String[] names;
-    public final int[] available;
-    public SessionData(String[] names, int[] available) {
-        this.names = names;
-        this.available = available;
+    public final SessionItem[] items;
+    public SessionData(SessionItem[] items) {
+        this.items = items;
     }
+    public static class SessionItem {
+        public final String name;
+        public final int quantity;
+        public SessionItem(String name, int quantity) {
+            this.name = name;
+            this.quantity = quantity;
+        }
+    }
+
 }

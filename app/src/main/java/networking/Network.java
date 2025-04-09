@@ -12,6 +12,7 @@ import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 public class Network {
@@ -22,6 +23,7 @@ public class Network {
 
     protected static MainActivity activity;
     private volatile static Server server = new Server();
+    private static final AtomicLong orderID = new AtomicLong(0);
 
     public static ArrayList<Device> scanDevices(@Nullable NetworkScanner.ProgressBarUpdate progressBar) {
         return NetworkScanner.scan(progressBar);
@@ -41,14 +43,63 @@ public class Network {
     public static void joinServer(String ip) {
 
     }
+    public static long getNewOrderID() {
+        return orderID.incrementAndGet();
+    }
 
-    protected static void writeString(String string, DataOutputStream out) throws IOException {
+    public static void removeOrderByID(long orderID) {
+        // TODO: WRITE
+    }
+    public static void setSessionData(SessionData data) {
+
+    }
+
+    public static void setOrderData(OrderData data) {
+        // TODO: WRITE
+    }
+    public static void addOrder(Order order) {
+        // TODO: WRITE
+    }
+    public static boolean addOrderChecksum(Order order, int checksum) {
+        // TODO: WRITE
+        return false;
+    }
+    public static void removeOrder(long orderID) {
+        // TODO: WRITE
+    }
+    public static boolean removeOrderChecksum(long orderID, int checksum) {
+        // TODO: WRITE
+        return false;
+    }
+    public static boolean addRemoveItemsByAmount(Order amounts, int checksum) {
+        // TODO: WRITE
+        return false;
+    }
+    public static OrderData getOrderData() {
+        return new OrderData(activity.orders);
+    }
+
+
+    protected static SessionData getSessionData() {
+        return activity.getSessionData();
+    }
+
+    protected static short getDeviceType() {
+        return MainActivity.DEVICE_TYPE;
+    }
+    protected static String getDeviceName() {
+        return "Names haven't been implemented yet.";
+    }
+
+
+
+    public static void writeString(String string, DataOutputStream out) throws IOException {
         int stringLength = string.length();
         out.writeInt(stringLength);
         out.writeChars(string);
     }
 
-    protected static String readString(DataInputStream in) throws IOException {
+    public static String readString(DataInputStream in) throws IOException {
         int stringLength = in.readInt();
         StringBuilder stringBuilder = new StringBuilder(stringLength);
         for (int index = 0; index < stringLength; index++) {

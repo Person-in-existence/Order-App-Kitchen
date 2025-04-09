@@ -68,12 +68,15 @@ class Server extends Thread {
         end();
         Socket socket = new Socket();
         socket.connect(new InetSocketAddress(ip, Network.PORT));
-        serverConnection = new Connection(socket);
+        serverConnection = new Connection(socket, this::removeConnection);
 
     }
 
     protected void leaveServer() {
         serverConnection.close(true);
+    }
+    protected void removeConnection(Connection connection) {
+        connections.remove(connection);
     }
 
     protected void end() {

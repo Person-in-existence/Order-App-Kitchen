@@ -14,6 +14,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import networking.Network;
+import networking.Order;
+
 @Deprecated
 public class Connection {
     public Server parent;
@@ -125,23 +129,12 @@ public class Connection {
         if (incomingIdempotencyToken == clientIdempotencyToken) {
             Log.d("OrderAppKitchen", "Disregarding incoming order with duplicate Idempotency token");
         } else {
-            // Process items into a list
-            ArrayList<Integer> orderItems = new ArrayList<>();
-            for (int i = 0; i < parent.parent.items.size(); i++) {
-                orderItems.add(0);
-            }
+            // Convert to orderItems
+            ArrayList<Order.OrderItem> items = new ArrayList<>();
             for (int index = 0; index < itemPositions.size(); index++) {
-                if (0 <= itemPositions.get(index) & itemPositions.get(index) < orderItems.size()) {
-                    orderItems.set(itemPositions.get(index), itemQuantities.get(index));
-                } else {
-                    // Data was corrupted, send a false ack to client
-                    sendType3(out, false, incomingIdempotencyToken);
-                    // Clear input so it can be cleanly read
-                    clearIn(in);
-                    return;
-                }
+                items.add(new Order.OrderItem(itemPositions.get(index), itemQuantities.get(index)));
             }
-            parent.parent.addOrder(Server.newOrder(customerName, orderItems, parent.parent));
+            parent.parent.addOrder(new Order(items, customerName, Network.getNewOrderID()));
         }
         // Send acknowledgement
         sendType3(out, true, incomingIdempotencyToken);

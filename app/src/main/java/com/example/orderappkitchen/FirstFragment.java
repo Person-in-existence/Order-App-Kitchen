@@ -17,6 +17,8 @@ import com.example.orderappkitchen.databinding.FragmentFirstBinding;
 import java.util.ArrayList;
 import java.util.Objects;
 
+import networking.Order;
+
 public class FirstFragment extends Fragment {
 
     private FragmentFirstBinding binding;
@@ -65,11 +67,11 @@ public class FirstFragment extends Fragment {
         deleteMode = false;
         binding = null;
     }
-    public void showOrder(ArrayList<Order> orders) {
+    public void showOrders(ArrayList<Order> orders) {
         ArrayList<String> ordersToDisplay = new ArrayList<>();
         for (int i = 0; i < orders.size(); i++) {
-            ordersToDisplay.add(orders.get(i).getText());
-        displayOrders(ordersToDisplay);
+            ordersToDisplay.add(orders.get(i).getText(activity.items.toArray(new String[0])));
+            displayOrders(ordersToDisplay);
         }
     }
     public void reTag(int tag) {

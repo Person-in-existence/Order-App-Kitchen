@@ -19,10 +19,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import networking.Network;
 import networking.SessionData;
+import networking.Order;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     public volatile ArrayList<Integer> available = new ArrayList<>();
     public FirstFragment fragment;
     public FragmentManager manager;
+    public static final short DEVICE_TYPE = 2; // 2 for kitchen
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,48 +95,74 @@ public class MainActivity extends AppCompatActivity {
         return NavigationUI.navigateUp(navController, appBarConfiguration)
                 || super.onSupportNavigateUp();
     }
-    public SessionData getOrderData() {
-        int itemSize = items.size();
-        String[] itemArray = new String[itemSize];
-        for (int index = 0; index < itemSize; index++) {
-            itemArray[index] = items.get(index);
-        }
+    public SessionData getSessionData() {
+        assert items.size() == available.size();
+        SessionData.SessionItem[] data = new SessionData.SessionItem[items.size()];
+        for (int index = 0; index < items.size(); index++) {
+            data[index] = new SessionData.SessionItem(items.get(index), available.get(index));
 
-        int availableSize = available.size();
-        int[] availableArray = new int[availableSize];
-        for (int index = 0; index < availableSize; index++) {
-            availableArray[index] = available.get(index);
         }
-        return new SessionData(itemArray, availableArray);
+        return new SessionData(data);
     }
 
-    public void setOrderData(SessionData sessionData) {
-        items = new ArrayList<>(Arrays.asList(sessionData.names));
-        ArrayList<Integer> newAvailable = new ArrayList<>(available);
-        for (int item : sessionData.available) {
-            newAvailable.add(item);
+    public void setSessionData(SessionData sessionData) {
+        ArrayList<String> newItems = new ArrayList<>();
+        ArrayList<Integer> newAvailable = new ArrayList<>();
+        for (SessionData.SessionItem item: sessionData.items) {
+            newItems.add(item.name);
+            newAvailable.add(item.quantity);
         }
-        available = newAvailable;
+        runOnUiThread(()->{
+            if (fragment != null) {
+                fragment.showOrders(orders);
+            }
+        });
     }
 
-    public void removeOrder(int orderNumber) {
-        orders.remove(orderNumber);
-        if (fragment != null) {
-            Server.wait(500);
-            fragment.showOrder(orders);
+    public void removeOrder(int orderIndex) {
+        orders.remove(orderIndex);
+        runOnUiThread(()->{
+            if (fragment != null) {
+                Server.wait(500);
+                fragment.showOrders(orders);
+            }
+        });
+    }
+    public void removeOrderByID(long orderID) {
+        for (int index = 0; index < orders.size(); index++) {
+            if (orders.get(index).orderID == orderID) {
+                orders.remove(index);
+                // Break so we dont go over the length of the list
+                break;
+            }
         }
+        runOnUiThread(()->{
+            if (fragment != null) {
+                fragment.showOrders(orders);
+            }
+        });
+    }
+    public int makeChecksum() {
+        int total = 0;
+        for (int index = 0; index < available.size(); index++) {
+            total += (int) (Math.pow(7, index) * available.get(index));
+        }
+        return total;
+
     }
 
-    protected void addOrder(Order order) {
+    public void addOrder(Order order) {
         orders.add(order);
-        if (fragment != null) {
-            Server.wait(2);
-            fragment.showOrder(orders);
-            fragment.showOrder(orders);
+        for (Order.OrderItem item: order.items) {
+            available.set(item.itemID, available.get(item.itemID)-item.quantity);
         }
-        for (int i = 0; i < 8; i++) {
-            available.set(i, available.get(i) - order.getAmounts().get(i));
-        }
+        runOnUiThread(()->{
+            if (fragment != null) {
+                Server.wait(2);
+                fragment.showOrders(orders);
+                fragment.showOrders(orders);
+            }
+        });
     }
 
     protected static String getJoinCode() {
@@ -168,9 +195,8 @@ public class MainActivity extends AppCompatActivity {
             total.add(0);
         }
         for (Order order : orders) {
-            ArrayList<Integer> items = order.getAmounts();
-            for (int i = 0; i < 8; i++) {
-                total.set(i, total.get(i) + items.get(i));
+            for (Order.OrderItem item: order.items) {
+                total.set(item.itemID, total.get(item.itemID) + item.quantity);
             }
         }
         return total;
@@ -186,18 +212,13 @@ public class MainActivity extends AppCompatActivity {
     protected void updateOrders() {
         if (fragment != null) {
             if (!orders.isEmpty()) {
-                fragment.showOrder(orders);
+                fragment.showOrders(orders);
             }
         }
     }
     protected void startSession(ArrayList<Integer> newAvailable, ArrayList<String> newItems) {
         available = newAvailable;
         items = newItems;
-        if (!orders.isEmpty()) {
-            for (int i = 0; i < orders.size(); i++) {
-                orders.get(i).setItems(items);
-            }
-        }
     }
 
     protected boolean hasItems() {return !items.isEmpty();}
