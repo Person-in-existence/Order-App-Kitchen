@@ -32,10 +32,16 @@ public class Network {
     }
 
     public static void startSession(MainActivity activity) {
-        Network.activity = activity;
-        server.setActivity(activity);
-        server.setAccepting(true);
-        server.start();
+        if (!server.isRunning()) {
+            Network.activity = activity;
+            server.setActivity(activity);
+            server.setAccepting(true);
+            server.start();
+        } else {
+            // If server is already open, just resend some type 2s.
+            server.resendInfo(getSessionData());
+        }
+
     }
 
     public static void endSession() {
@@ -59,12 +65,20 @@ public class Network {
     public static void setOrderData(OrderData data) {
         activity.setOrderData(data);
     }
-    public static void addOrder(Order order) {
+    static void addOrderAndUpdate(Order order, Connection connection) {
         activity.addOrder(order);
+
+        // Update waiters with amounts
+        server.sendWaiterUpdates(order, activity.makeChecksum(), connection);
     }
     public static boolean addOrderChecksum(Order order, int receivedChecksum) {
-        // Add the order
-        addOrder(order);
+        // Check that the order isn't already added
+        if (activity.isOrderWithID(order.orderID)) {
+            Log.w("Network", "Order already exists: ID " + order.orderID);
+        } else {
+            // Add the order only if it doesn't already exist
+            activity.addOrder(order);
+        }
 
         // Calculate checksum
         int actualChecksum = activity.makeChecksum();
@@ -106,7 +120,9 @@ public class Network {
     public static void writeString(String string, DataOutputStream out) throws IOException {
         int stringLength = string.length();
         out.writeInt(stringLength);
-        out.writeChars(string);
+        for (int index = 0; index < stringLength; index++) {
+            out.writeChar(string.charAt(index));
+        }
     }
 
     public static String readString(DataInputStream in) throws IOException {

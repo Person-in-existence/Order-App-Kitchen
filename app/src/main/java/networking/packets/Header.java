@@ -2,6 +2,8 @@ package networking.packets;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -12,6 +14,7 @@ public class Header {
     public final int idempotencyToken;
     public Header(DataInputStream in) throws IOException {
         this.versionNumber = in.readShort();
+        Log.d("networking.HeaderDebug", String.valueOf(versionNumber));
         this.type = in.readShort();
         this.idempotencyToken = in.readInt();
     }
@@ -29,5 +32,9 @@ public class Header {
         if (this.type != expectedType) {
             Log.w("orderAppKitchen.networking.packets.Header", "Wrong header type: expected " + expectedType + " but got " + this.type);
         }
+    }
+    @NonNull
+    public String toString() {
+        return "Version Number: " + versionNumber + " Type: " + type + " idempotency token: " + idempotencyToken;
     }
 }

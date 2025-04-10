@@ -58,10 +58,6 @@ public class MainActivity extends AppCompatActivity {
         });
          */
 
-        Server networkHandler = new Server();
-        Thread networkThread = new Thread(networkHandler);
-        networkHandler.parent = this;
-        networkThread.start();
         FragmentManager manager = getSupportFragmentManager();
 
 
@@ -141,7 +137,6 @@ public class MainActivity extends AppCompatActivity {
         orders.remove(orderIndex);
         runOnUiThread(()->{
             if (fragment != null) {
-                Server.wait(500);
                 fragment.showOrders(orders);
             }
         });
@@ -166,7 +161,6 @@ public class MainActivity extends AppCompatActivity {
             total += (int) (Math.pow(7, index) * available.get(index));
         }
         return total;
-
     }
 
     public void addOrder(Order order) {
@@ -176,11 +170,18 @@ public class MainActivity extends AppCompatActivity {
         }
         runOnUiThread(()->{
             if (fragment != null) {
-                Server.wait(2);
-                fragment.showOrders(orders);
                 fragment.showOrders(orders);
             }
         });
+    }
+
+    public boolean isOrderWithID(long orderID) {
+        for (Order order: orders) {
+            if (order.orderID == orderID) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected static String getJoinCode() {
@@ -237,6 +238,9 @@ public class MainActivity extends AppCompatActivity {
     protected void startSession(ArrayList<Integer> newAvailable, ArrayList<String> newItems) {
         available = newAvailable;
         items = newItems;
+
+        // Start the network session
+        Network.startSession(this);
     }
 
     protected boolean hasItems() {return !items.isEmpty();}
