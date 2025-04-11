@@ -2,128 +2,165 @@ package networking;
 
 import android.util.Log;
 
-import androidx.annotation.Nullable;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.util.Set;
 
 class NetworkScanner {
-    public static final int scanWaitTime = 1000; // Time in ms
-    public static ArrayList<Device> scan(@Nullable ProgressBarUpdate progressBar)  {
+    public static final int scanWaitTime = 10000; // Time in ms
+    public static final int expectedStringLengthPosition = 2+2+4+2;
+    public static final int expectedSentPacketLength = 2+2+4;
+    public static void scan(NewDevice newDevice, Timeout timeout)  {
         Device[] devices = new Device[256];
 
         String thisPart = Network.getIPAddress().split("\\.")[3];
         int finalPart = Integer.parseInt(thisPart);
-        for (int index = 0; index < 256; index++) {
-            int finalIndex = index;
-            new Thread() {
-                public void run() {
+        long endTime = System.currentTimeMillis() + scanWaitTime;
+        ByteBuffer toSend = ByteBuffer.allocate(expectedSentPacketLength);
 
-                    Log.d("NetworkScanner",String.valueOf(finalIndex));
-                    // Dont detect this device
-                    if(finalIndex ==finalPart)  {
-                        return;
-                    }
-
-                    String ip = Network.subnet + finalIndex;
-                    try {
-                        Socket socket = new Socket();
-                        socket.setSoTimeout(scanWaitTime);
-                        socket.connect(new InetSocketAddress(ip, Network.PORT), 100);
-
-                        // Send a type 8 packet
-                        DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-
-                        // Version number
-                        short versionNumber = Network.NETWORK_VERSION_NUMBER;
-                        out.writeShort(versionNumber);
-
-                        // Packet type: 8
-                        short packetType = 8;
-                        out.writeShort(packetType);
-
-                        // Idempotency token - 0 will do
-                        int idempotency = 0;
-                        out.writeInt(idempotency);
-
-                        // End packet
-
-                        // Set a read timeout of 1s
-                        DataInputStream in = new DataInputStream(socket.getInputStream());
-
-                        // Version number - dont check for old version numbers because we want them to show up but be outdated
-                        short inVersionNumber = in.readShort();
-
-                        short inPacketType = in.readShort();
-                        // If the packet type is not scan return then quit
-                        if (inPacketType != 9) {
-                            out.close();
-                            socket.close();
-                            return;
-                        }
-                        // Idempotency (ignored)
-                        in.readInt();
-                        // Device type
-                        short deviceType = in.readShort();
-                        String deviceName = Network.readString(in);
-
-                        // Add the device
-                        devices[finalIndex] = new Device(deviceName, socket.getInetAddress(), deviceType, inVersionNumber);
-
-                        // Close in
-                        in.close();
-                        // Close out
-                        out.close();
-
-                        socket.close();
-                    } catch(IOException e){
-                        Log.d("NetworkScanner", Network.subnet + finalIndex + " timeout");
-                        Log.d("NetworkScanner", e.getMessage());
-                    }
-                }
-
-            }.start();
-        }
-        // Check whether the progressbar needs to be updated
-        if (progressBar != null) {
-            long currentMillis = System.currentTimeMillis();
-            long target = currentMillis + scanWaitTime;
-            while (currentMillis <= target) {
-                long difference = target-currentMillis;
-                int progress = (int) (100-difference/scanWaitTime*100);
-                System.out.println(progress);
-                progressBar.update(progress);
-                currentMillis = System.currentTimeMillis();
+        // Version Number
+        toSend.putShort(Network.NETWORK_VERSION_NUMBER);
+        // Packet type (7)
+        toSend.putShort((short) 7);
+        // Idempotency (-1 so we don't mess up packets)
+        toSend.putInt(-1);
+        toSend.rewind();
+        try{
+            Selector selector = Selector.open();
+            for (int index = 0; index < 256; index++) {
                 try {
-                    Thread.sleep(scanWaitTime/100);
-                } catch (InterruptedException ignored) {}
+                    String ip = Network.subnet + index;
+                    SocketChannel socketChannel = SocketChannel.open();
+                    // Set it to non-blocking (so we dont need a thread per connection)
+                    socketChannel.configureBlocking(false);
+                    socketChannel.connect(new InetSocketAddress(ip, Network.PORT));
 
+                    SelectionKey key = socketChannel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE | SelectionKey.OP_CONNECT);
+                } catch (Exception ignored) {System.err.println(index);}
             }
-        } else {
-            // If not, just sleep for 1000
-            try {
-                Thread.sleep(scanWaitTime);
-            } catch (InterruptedException ignored) {}
+
+            while (System.currentTimeMillis() < endTime) {
+                int number = selector.select(20);
+                if (number == 0) {
+                    continue;
+                }
+                // Handle connections
+                Set<SelectionKey> selectedKeys = selector.selectedKeys();
+                for (SelectionKey key: selectedKeys) {
+                    SocketChannel socket = (SocketChannel) key.channel();
+
+                    // Connectable key - we finish connection and then send packet
+                    if (key.isConnectable()) {
+                        // Attach data
+                        SocketData items = new SocketData(ByteBuffer.allocate(256), toSend);
+                        key.attach(items);
+                        try {
+                            if (socket.finishConnect()) {
+                                socket.write(items.toSend);
+                            }
+
+                        } catch (IOException e) {
+                            socket.close();
+                        }
+                    } else if (key.isReadable()) {
+                        SocketData items = (SocketData) key.attachment();
+                        ByteBuffer buffer = items.buffer;
+
+                        int read = socket.read(buffer);
+
+                        if (items.isReady()) {
+                            // Fire new device
+                            newDevice.create(items.makeDevice(((InetSocketAddress) socket.getRemoteAddress()).getAddress()));
+                            // Remove the socket
+                            socket.close();
+                        }
+
+                        if (read == -1) {
+                            // Connection closed
+                            socket.close();
+                        }
+                    } else if (key.isWritable()) {
+                        SocketData data = (SocketData) key.attachment();
+                        if (data.toSend.hasRemaining()) {
+                            socket.write(data.toSend);
+                        }
+                    }
+
+                }
+            }
+            Log.d("networking.NetworkScanner", "Timeout reached, closing");
+            // Close all
+            for (SelectionKey channel : selector.keys()) {
+                channel.channel().close();
+            }
+            timeout.timeout();
+
+
+
+            selector.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
-        System.out.println(Arrays.toString(devices));
-        // Put into a smaller array
-        ArrayList<Device> arrayListDevices = new ArrayList<>();
-        for (Device device : devices) {
-            if (device != null) {
-                arrayListDevices.add(device);
-            }
-        }
-        System.out.println(arrayListDevices.size());
-        return arrayListDevices;
+
+
     }
-    public interface ProgressBarUpdate {
-        void update(int progress);
+    public interface NewDevice {
+        void create(Device device);
+    }
+    public interface Timeout {
+        void timeout();
+    }
+    private static class SocketData {
+        public ByteBuffer toSend;
+        public ByteBuffer buffer;
+        public int expectedLength = -1;
+        public SocketData(ByteBuffer buffer, ByteBuffer toSend) {
+            this.buffer = buffer;
+            this.toSend = toSend.duplicate();
+        }
+        public boolean isReady() {
+            Log.d("NetworkScanner", "Checking if socket is ready");
+            // Check whether we can read the string length
+            if (expectedLength == -1 && buffer.position() > expectedStringLengthPosition) {
+                try {
+                    // Mark and reset mean we don't advance the buffer
+                    buffer.mark();
+                    // +4 for the actual thing we just read.
+                    expectedLength = buffer.getInt(expectedStringLengthPosition)*2 + expectedStringLengthPosition + 4;
+                    buffer.reset();
+                } catch (IndexOutOfBoundsException ignored) {
+                    // Return false if there isnt space for the int
+                    return false;
+                }
+            } else {
+                return false;
+            }
+            return buffer.position() == expectedLength;
+        }
+        public Device makeDevice(InetAddress ip) {
+            // Parse the packet
+            buffer.rewind();
+            short version = buffer.getShort();
+            short type = buffer.getShort();
+            int idempotency = buffer.getInt();
+
+            short deviceType = buffer.getShort();
+
+            int stringLength = buffer.getInt();
+            StringBuilder stringBuilder = new StringBuilder(stringLength);
+            for (int index = 0; index < stringLength; index++) {
+                stringBuilder.append(buffer.getChar());
+            }
+            String name = stringBuilder.toString();
+
+            return new Device(name, ip, deviceType, version);
+        }
     }
 
 }

@@ -105,14 +105,14 @@ public class MainActivity extends AppCompatActivity {
     public void setSessionData(SessionData sessionData) {
         ArrayList<String> newItems = new ArrayList<>();
         ArrayList<Integer> newAvailable = new ArrayList<>();
-        for (SessionData.SessionItem item: sessionData.items) {
+        for (SessionData.SessionItem item : sessionData.items) {
             newItems.add(item.name);
             newAvailable.add(item.quantity);
         }
         this.items = newItems;
         this.available = newAvailable;
         // Update orders (so they reset if names have changed etc)
-        runOnUiThread(()->{
+        runOnUiThread(() -> {
             if (fragment != null) {
                 fragment.showOrders(orders);
             }

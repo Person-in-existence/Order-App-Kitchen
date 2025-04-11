@@ -56,23 +56,29 @@ class Server extends Thread {
                     Log.v("networking.Server", "New connection accept " + s.getInetAddress());
 
                     // Try and find an existing connection with the socket.
-                    boolean connectionFound = false;
+                    boolean foundExisting = false;
                     // Synchronize as another thread could break otherwise
                     synchronized (connections) {
                         for (Connection connection: connections) {
                             if (connection.ip.toString().equals(s.getInetAddress().toString())) {
                                 Log.v("networking.Server", "Pre-existing connection found for reconnect, transferring to that");
-                                if (connection.acceptNewSocket(s)) {
-                                    connectionFound = true;
-                                    break; // Can never be two, and we don't want two if there are.
-                                } else {
-                                    connections.remove(connection);
-                                }
+
+
+                                Connection newConnection = new Connection(s, false, this::removeConnection, connection.getIdempotency(), connection.getReceivedIdempotencies());
+                                connections.add(newConnection);
+
+                                // Close the old connection (which removes it because of the closelistener)
+
+
+                                foundExisting = true;
+                                // Close the old connection
+                                connection.close(false);
+                                break;
                             }
                         }
                     }
 
-                    if (!connectionFound) {
+                    if (!foundExisting) {
                         // Don't try reconnect - that is the connecting device's job.
                         Connection connection = new Connection(s, false, this::removeConnection);
                         connections.add(connection);

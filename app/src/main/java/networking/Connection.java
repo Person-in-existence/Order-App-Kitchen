@@ -36,7 +36,7 @@ class Connection extends Thread {
     public static final int packetWaitTimeMs = 1000;
     public static final int reconnectTries = 10; // 10 produces maximum delay of 1024 ms - about a second.
     private volatile ConcurrentLinkedQueue<Packet> queue = new ConcurrentLinkedQueue<>();
-    private final ArrayList<Integer> receivedIdempotencies = new ArrayList<>();
+    private final ArrayList<Integer> receivedIdempotencies;
     private final DelayQueue<ResponseWait> waiting = new DelayQueue<>();
     private Socket socket;
     private volatile boolean open = true;
@@ -45,7 +45,7 @@ class Connection extends Thread {
     private DataOutputStream out;
     private DataInputStream in;
     private final CloseListener listener;
-    private final boolean triesReconnect;
+    private boolean triesReconnect;
     private boolean acceptNewReconnect = false;
 
     protected Connection(Socket socket, boolean triesReconnect, @Nullable CloseListener closeListener) {
@@ -53,6 +53,16 @@ class Connection extends Thread {
         this.ip = socket.getInetAddress();
         this.triesReconnect = triesReconnect;
         this.listener = closeListener;
+        this.receivedIdempotencies = new ArrayList<>();
+        start();
+    }
+    protected Connection(Socket socket, boolean triesReconnect, @Nullable CloseListener closeListener, int startIdempotency, ArrayList<Integer> receivedIdempotencies) {
+        this.socket = socket;
+        this.ip = socket.getInetAddress();
+        this.triesReconnect = triesReconnect;
+        this.listener = closeListener;
+        this.currentIdempotency = startIdempotency;
+        this.receivedIdempotencies = receivedIdempotencies;
         start();
     }
     public void run() {
@@ -84,7 +94,11 @@ class Connection extends Thread {
                     // Receive the idempotency (Do afterwards so we don't mess up packet handling)
                     receivedIdempotencies.add(header.idempotencyToken);
                     // Update our current idempotency so we don't cause a failure when we send something
-                    currentIdempotency = header.idempotencyToken;
+                    // Check if it larger first, so a scan packet doesn't break everything
+                    if (header.idempotencyToken > currentIdempotency) {
+                        currentIdempotency = header.idempotencyToken;
+                    }
+
 
                     // Remove from waiting responses if it exists
                     removeWaiting(header);
@@ -97,6 +111,7 @@ class Connection extends Thread {
                     if (item.getAttempt() > maxAttempts) {
                         // Give up on packet
                         item.packet.sent(false);
+                        item = waiting.poll();
                         continue;
                     }
 
@@ -122,7 +137,7 @@ class Connection extends Thread {
                 }
 
             } catch (IOException e) {
-                Log.e("networking.Connection", "Exception in connection with ip " + ip + " " + e.getMessage() + " " + Arrays.toString(e.getStackTrace()));
+                Log.e("networking.Connection", e.getClass() + " Exception in connection with ip " + ip + " " + e.getMessage() + " " + Arrays.toString(e.getStackTrace()));
                 if (triesReconnect) {
                     Log.e("networking.Connection", "Attempting reconnect.");
                     if (!reconnectBackoff()) {
@@ -209,6 +224,9 @@ class Connection extends Thread {
         return currentIdempotency;
     }
     protected void close(boolean sendType4) {
+        Log.d("networking.Connection", "Close called on connection with IP: " + ip);
+        // Stop it from reconnecting - we have intentionally closed it
+        triesReconnect = false;
         if (sendType4) {
             try {
                 Packet packet = new Type4(new Header(Network.NETWORK_VERSION_NUMBER, (short) 4, getIdempotency()));
@@ -302,6 +320,7 @@ class Connection extends Thread {
         }
     }
     private void handleType7(Header header) throws IOException {
+        Log.d("networking.Connection", "Type 7 received from IP " + ip);
         Type8 response = new Type8(new Header(Network.NETWORK_VERSION_NUMBER, (short) 8,header.idempotencyToken), Network.getDeviceType(), Network.getDeviceName());
         response.send(out);
     }
@@ -382,20 +401,7 @@ class Connection extends Thread {
     public boolean isOpen() {
         return open;
     }
-    public boolean acceptNewSocket(Socket socket) throws IOException{
-        if (acceptNewReconnect) {
-            this.socket = socket;
-            this.in = new DataInputStream(socket.getInputStream());
-            this.out = new DataOutputStream(socket.getOutputStream());
-            // Close old thread if it managed to be still open
-            open = false;
-            try {
-                this.join(1000);
-            } catch (InterruptedException ignored) {}
-            open = true;
-            start();
-            return true;
-        }
-        return false;
+    protected ArrayList<Integer> getReceivedIdempotencies() {
+        return receivedIdempotencies;
     }
 }

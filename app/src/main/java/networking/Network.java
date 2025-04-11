@@ -27,8 +27,8 @@ public class Network {
     private volatile static Server server = new Server();
     private static final AtomicLong orderID = new AtomicLong(0);
 
-    public static ArrayList<Device> scanDevices(@Nullable NetworkScanner.ProgressBarUpdate progressBar) {
-        return NetworkScanner.scan(progressBar);
+    public static void scanDevices(NetworkScanner.NewDevice newDevice, NetworkScanner.Timeout timeout) {
+        NetworkScanner.scan(newDevice, timeout);
     }
 
     public static void startSession(MainActivity activity) {

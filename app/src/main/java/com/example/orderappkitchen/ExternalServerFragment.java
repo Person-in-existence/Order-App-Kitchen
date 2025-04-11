@@ -11,7 +11,6 @@ import androidx.fragment.app.Fragment;
 
 import com.example.orderappkitchen.databinding.FragmentExternalServerBinding;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import networking.Device;
@@ -42,16 +41,20 @@ public class ExternalServerFragment extends Fragment {
     }
     private void scanDevices() {
         binding.scanProgressBar.setVisibility(View.VISIBLE);
+        ExternalServerFragment thisReference = this;
         new Thread() {
             public void run() {
-                setDevices(Network.scanDevices((int percent) -> updateProgressBar(percent)));
+                Network.scanDevices(thisReference::addDevice, thisReference::onTimeout);
             }
         }.start();
+    }
+    public void addDevice(Device device) {
+
     }
     public void updateProgressBar(int percent) {
         binding.scanProgressBar.setProgress(percent);
     }
-    public void setDevices(ArrayList<Device> devices) {
+    public void onTimeout() {
         try {
             requireActivity().runOnUiThread(() -> {
                 binding.scanProgressBar.setVisibility(View.GONE);
