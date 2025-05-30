@@ -240,4 +240,14 @@
         app:layout_constraintStart_toStartOf="@+id/itemSeven"
         app:layout_constraintTop_toBottomOf="@+id/itemSeven" />
 
+    <Button
+        android:id="@+id/chooseConfigButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/kitchen_mode_button"
+        app:layout_constraintEnd_toEndOf="@+id/itemEight"
+        app:layout_constraintStart_toStartOf="@+id/availableEight"
+        app:layout_constraintTop_toBottomOf="@+id/availableEight" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

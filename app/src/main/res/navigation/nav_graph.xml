@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/FirstFragment">
+    app:startDestination="@id/chooseConfig">
 
     <fragment
         android:id="@+id/FirstFragment"
@@ -14,6 +14,9 @@
         <action
             android:id="@+id/action_FirstFragment_to_SecondFragment"
             app:destination="@id/SecondFragment" />
+        <action
+            android:id="@+id/action_FirstFragment_to_chooseConfig"
+            app:destination="@id/chooseConfig" />
     </fragment>
     <fragment
         android:id="@+id/SecondFragment"
@@ -24,5 +27,49 @@
         <action
             android:id="@+id/action_SecondFragment_to_FirstFragment"
             app:destination="@id/FirstFragment" />
+        <action
+            android:id="@+id/action_SecondFragment_to_externalServerFragment"
+            app:destination="@id/externalServerFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@animator/nav_default_pop_exit_anim" />
+        <action
+            android:id="@+id/action_SecondFragment_to_chooseConfig"
+            app:destination="@id/chooseConfig" />
+    </fragment>
+    <fragment
+        android:id="@+id/externalServerFragment"
+        android:name="com.example.orderappkitchen.ServerSearchFragment"
+        android:label="ExternalServerFragment" >
+        <action
+            android:id="@+id/action_externalServerFragment_to_SecondFragment"
+            app:destination="@id/SecondFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
+        <action
+            android:id="@+id/action_externalServerFragment_to_FirstFragment"
+            app:destination="@id/FirstFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@animator/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@animator/nav_default_pop_exit_anim" />
+        <action
+            android:id="@+id/action_externalServerFragment_to_chooseConfig"
+            app:destination="@id/chooseConfig" />
+    </fragment>
+    <fragment
+        android:id="@+id/chooseConfig"
+        android:name="com.example.orderappkitchen.ChooseConfig"
+        android:label="fragment_choose_config"
+        tools:layout="@layout/fragment_choose_config" >
+        <action
+            android:id="@+id/action_chooseConfig_to_externalServerFragment"
+            app:destination="@id/externalServerFragment" />
+        <action
+            android:id="@+id/action_chooseConfig_to_SecondFragment"
+            app:destination="@id/SecondFragment" />
     </fragment>
 </navigation>

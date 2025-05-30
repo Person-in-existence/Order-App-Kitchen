@@ -9,6 +9,7 @@ import android.util.Log;
 import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
@@ -19,16 +20,25 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import java.util.ArrayList;
+import java.util.Collection;
+
+import networking.Network;
+import networking.OrderData;
+import networking.SessionData;
+import networking.Order;
 
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
-    public ArrayList<Order> orders = new ArrayList<>();
-    public ArrayList<String> items = new ArrayList<>();
-    public ArrayList<Integer> available = new ArrayList<>();
+    public volatile ArrayList<Order> orders = new ArrayList<>();
+    public volatile ArrayList<String> items = new ArrayList<>();
+    public volatile ArrayList<Integer> available = new ArrayList<>();
     public FirstFragment fragment;
     public FragmentManager manager;
+    private ConnectionType connectionType;
+    public static final short DEVICE_TYPE = 2; // 2 for kitchen
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,14 +62,18 @@ public class MainActivity extends AppCompatActivity {
         });
          */
 
-        Server networkHandler = new Server();
-        Thread networkThread = new Thread(networkHandler);
-        networkHandler.parent = this;
-        networkThread.start();
         FragmentManager manager = getSupportFragmentManager();
 
+        Network.setActivity(this);
 
 
+    }
+
+    protected void setConnectionType(ConnectionType connectionType) {
+        this.connectionType = connectionType;
+    }
+    public ConnectionType getConnectionType() {
+        return connectionType;
     }
 
     @Override
@@ -90,85 +104,193 @@ public class MainActivity extends AppCompatActivity {
         return NavigationUI.navigateUp(navController, appBarConfiguration)
                 || super.onSupportNavigateUp();
     }
+    public SessionData getSessionData() {
+        assert items.size() == available.size();
+        SessionData.SessionItem[] data = new SessionData.SessionItem[items.size()];
+        for (int index = 0; index < items.size(); index++) {
+            data[index] = new SessionData.SessionItem(items.get(index), available.get(index));
+
+        }
+        return new SessionData(data);
+    }
+
+    public void setSessionData(SessionData sessionData) {
+        ArrayList<String> newItems = new ArrayList<>();
+        ArrayList<Integer> newAvailable = new ArrayList<>();
+        for (SessionData.SessionItem item : sessionData.items) {
+            newItems.add(item.name);
+            newAvailable.add(item.quantity);
+        }
+        this.items = newItems;
+        this.available = newAvailable;
+        // Update orders (so they reset if names have changed etc)
+        runOnUiThread(() -> {
+            if (fragment != null) {
+                fragment.showOrders(orders);
+            }
+        });
+    }
+
+    public OrderData getOrderData() {
+        return new OrderData(orders);
+    }
+
+    public void setOrderData(OrderData data) {
+        this.orders = data.orders;
+
+        runOnUiThread(()->{
+            if (fragment != null) {
+                fragment.showOrders(orders);
+            }
+        });
+    }
+
+    public void removeOrder(int orderIndex) {
+        if (connectionType == ConnectionType.EXTERNAL) {
+            Network.deleteOrder(orders.get(orderIndex).orderID);
+        }
+        orders.remove(orderIndex);
+        runOnUiThread(()->{
+            if (fragment != null) {
+                fragment.showOrders(orders);
+            }
+        });
+    }
+
+    public void onExternalDisconnect() {
+        runOnUiThread(()->{
+            showSnackbar("Connection Lost!");
+            Navigation.findNavController(this, R.id.nav_host_fragment_content_main).navigate(R.id.chooseConfig);
+        });
+    }
+    protected void reset() {
+
+        orders = new ArrayList<>();
+        available = new ArrayList<>();
+        items = new ArrayList<>();
+
+
+
+    }
+    public void removeOrderByID(long orderID) {
+        for (int index = 0; index < orders.size(); index++) {
+            if (orders.get(index).orderID == orderID) {
+                orders.remove(index);
+                // Break so we dont go over the length of the list once we have found it
+                break;
+            }
+        }
+        runOnUiThread(()->{
+            if (fragment != null) {
+                fragment.showOrders(orders);
+            }
+        });
+    }
+    public int makeChecksum() {
+        int total = 0;
+        for (int index = 0; index < available.size(); index++) {
+            total += (int) (Math.pow(7, index) * available.get(index));
+        }
+        return total;
+    }
+
+    public void addOrder(Order order) {
+        Log.v("MainActivity", "Order added!");
+        orders.add(order);
+        for (Order.OrderItem item: order.items) {
+            available.set(item.itemID, available.get(item.itemID)-item.quantity);
+        }
+        runOnUiThread(()->{
+            if (fragment != null) {
+                fragment.showOrders(orders);
+            }
+        });
+    }
+
+    public boolean isOrderWithID(long orderID) {
+        for (Order order: orders) {
+            if (order.orderID == orderID) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String getJoinCode() {
         try {
-            IpCode getIp = new IpCode();
-            Thread thread = new Thread(getIp);
-            thread.start();
-            thread.join(10000);
-            String ip = getIp.ip2;
-            Log.d("MainActivity",ip);
-            if (ip != null) {
-                String[] bits = ip.split("\\.");
-                Log.d("JoinCodem", bits[3]);
+            final String[] ip = new String[1];
+            Thread getIPThread = new Thread() {
+                public void run() {
+                    ip[0] = Network.getIPAddress();
+                }
+            };
+            getIPThread.start();
+            getIPThread.join(10000);
+            Log.d("MainActivity", ip[0]);
+            if (ip[0] != null) {
+                String[] bits = ip[0].split("\\.");
+                Log.d("JoinCode", bits[3]);
                 return bits[3];
             } else {
-                Log.d("JoinCodem", "IP was null");
+                Log.d("JoinCode", "IP was null");
                 return "";
             }
         } catch (Exception e) {
-            Log.d("JoinCodem", String.valueOf(e));
+            Log.d("JoinCode", String.valueOf(e));
             return "";
         }
     }
-    public ArrayList<Integer> getTotal() {
+    protected ArrayList<Integer> getTotal() {
         ArrayList<Integer> total = new ArrayList<>();
         for (int z = 0; z<8; z++) {
             total.add(0);
         }
         for (Order order : orders) {
-            ArrayList<Integer> items = order.getAmounts();
-            for (int i = 0; i < 8; i++) {
-                total.set(i, total.get(i) + items.get(i));
+            for (Order.OrderItem item: order.items) {
+                total.set(item.itemID, total.get(item.itemID) + item.quantity);
             }
         }
         return total;
     }
-    public ArrayList<String> getItems() {
+    protected ArrayList<String> getItems() {
         return items;
     }
-    public ArrayList<Integer> getAvailable() {
+    protected ArrayList<Integer> getAvailable() {
         return available;
     }
-    public void addOrder(Order order) {
-        orders.add(order);
+
+    protected void setFragment(FirstFragment newFragment) {fragment = newFragment; updateOrders();}
+    protected void updateOrders() {
         if (fragment != null) {
-            Server.wait(2);
-            fragment.showOrder(orders);
-            fragment.showOrder(orders);
-        }
-        for (int i = 0; i < 8; i++) {
-            available.set(i, available.get(i) - order.getAmounts().get(i));
-        }
-    }
-    public void setFragment(FirstFragment newFragment) {fragment = newFragment; updateOrders();}
-    public void updateOrders() {
-        if (fragment != null) {
-            if (orders.size() > 0) {
-                fragment.showOrder(orders);
+            if (!orders.isEmpty()) {
+                fragment.showOrders(orders);
             }
         }
     }
-    public void startSession(ArrayList<Integer> newAvailable, ArrayList<String> newItems) {
+    protected void startSession(ArrayList<Integer> newAvailable, ArrayList<String> newItems) {
         available = newAvailable;
         items = newItems;
-        if (orders.size() > 0) {
-            for (int i = 0; i < orders.size(); i++) {
-                orders.get(i).setItems(items);
-            }
-        }
+
+        // Start the network session
+        Network.startSession(this);
     }
-    public void removeOrder(int orderNumber) {
-        orders.remove(orderNumber);
-        if (fragment != null) {
-            Server.wait(500);
-            fragment.showOrder(orders);
-        }
+
+    protected void setServerData(ArrayList<Integer> newAvailable, ArrayList<String> newItems) {
+        available = newAvailable;
+        items = newItems;
+
+        Network.setServerData();
     }
-    public boolean hasItems() {return items.size() > 0;}
-    public boolean hasAvailables() {return available.size() > 0;}
-    public void showSnackbar(String message) {
+
+    protected boolean hasItems() {return !items.isEmpty();}
+    protected boolean hasAvailables() {return !available.isEmpty();}
+    protected void showSnackbar(String message) {
         Snackbar.make(binding.toolbar, message, Snackbar.LENGTH_LONG)
                 .setAction(message, null).show();
+    }
+    public enum ConnectionType {
+        DEVICE,
+        EXTERNAL,
+        NONE
     }
 }

@@ -17,6 +17,8 @@ import com.example.orderappkitchen.databinding.FragmentFirstBinding;
 import java.util.ArrayList;
 import java.util.Objects;
 
+import networking.Order;
+
 public class FirstFragment extends Fragment {
 
     private FragmentFirstBinding binding;
@@ -39,13 +41,7 @@ public class FirstFragment extends Fragment {
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        binding.buttonFirst.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                NavHostFragment.findNavController(FirstFragment.this)
-                        .navigate(R.id.action_FirstFragment_to_SecondFragment);
-            }
-        });
+        binding.buttonFirst.setOnClickListener(view1 -> NavHostFragment.findNavController(FirstFragment.this).navigate(R.id.action_FirstFragment_to_SecondFragment));
         Log.d("joinCode", MainActivity.getJoinCode());
         binding.joinCode.setText("Join Code:" + MainActivity.getJoinCode());
         buttons = new ArrayList<>();
@@ -65,12 +61,13 @@ public class FirstFragment extends Fragment {
         deleteMode = false;
         binding = null;
     }
-    public void showOrder(ArrayList<Order> orders) {
+    public void showOrders(ArrayList<Order> orders) {
         ArrayList<String> ordersToDisplay = new ArrayList<>();
         for (int i = 0; i < orders.size(); i++) {
-            ordersToDisplay.add(orders.get(i).getText());
-        displayOrders(ordersToDisplay);
+            ordersToDisplay.add(orders.get(i).getText(activity.items.toArray(new String[0])));
         }
+        // TODO: MOVED FROM INSIDE FOR LOOP - EVALUATE IF NEEDED
+        displayOrders(ordersToDisplay);
     }
     public void reTag(int tag) {
         if (tag != 0) {
@@ -86,14 +83,11 @@ public class FirstFragment extends Fragment {
             LinearLayout scroll = binding.buttonHolder;
             int size = texts.size();
             int current = 0;
-            // replace texts.size() with variable size
-            if (buttons.size() == texts.size()) {
+
+            if (buttons.size() == size) {
                 System.out.println(buttons.size());
                 System.out.println(texts.size());
                 for (int i = 0; i < size; i++) {
-                    if (size == i) {
-                        break;
-                    }
                     buttons.get(i).setText(texts.get(i));
                     buttons.get(i).setTag(i);
                 }
@@ -112,7 +106,7 @@ public class FirstFragment extends Fragment {
                         if (deleteMode) {
                             Button thisButton = (Button)view;
                             if (thisButton != null) {
-                                int tag = Integer.parseInt(String.valueOf(thisButton.getTag()));
+                                int tag = (int) thisButton.getTag();
                                 buttons.remove(thisButton);
                                 activity.removeOrder(tag);
                                 LinearLayout parent = (LinearLayout) thisButton.getParent();
