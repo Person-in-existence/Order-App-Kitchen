@@ -90,6 +90,7 @@ public class ServerSearchFragment extends Fragment {
                     button.setText("Connect!");
                     button.setOnClickListener(view->joinServer(device));
                     deviceRow.addView(button);
+                    
 
                     binding.deviceTable.addView(deviceRow);
 
