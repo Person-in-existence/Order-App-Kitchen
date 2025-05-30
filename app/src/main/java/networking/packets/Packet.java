@@ -6,8 +6,10 @@ import androidx.annotation.Nullable;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import networking.SuccessNotifier;
+
 public abstract class Packet {
-    private SendListener listener = null;
+    private SuccessNotifier listener = null;
     public abstract Header getHeader();
     public void send(DataOutputStream out) throws IOException {
         // Send the header
@@ -18,16 +20,14 @@ public abstract class Packet {
     protected abstract void sendBody(DataOutputStream out) throws IOException;
     public void sent(boolean success) {
         if (listener != null) {
-            listener.onSuccessfulSend(success);
+            listener.success(success);
         }
     }
-    public void setSendListener(@Nullable SendListener listener) {
+    public void setSendListener(@Nullable SuccessNotifier listener) {
         this.listener = listener;
     }
 
-    public interface SendListener {
-        void onSuccessfulSend(boolean success);
-    }
+
     @NonNull
     public String toString() {
         return getHeader().toString();

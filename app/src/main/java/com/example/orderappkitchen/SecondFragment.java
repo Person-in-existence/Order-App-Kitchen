@@ -15,6 +15,9 @@ import com.example.orderappkitchen.databinding.FragmentSecondBinding;
 
 import java.util.ArrayList;
 
+import networking.Network;
+import networking.SessionData;
+
 public class SecondFragment extends Fragment {
 
     private FragmentSecondBinding binding;
@@ -37,54 +40,14 @@ public class SecondFragment extends Fragment {
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        binding.buttonSecond.setOnClickListener(view1 -> {
-            NavHostFragment.findNavController(SecondFragment.this).navigate(R.id.action_SecondFragment_to_FirstFragment);
-            ArrayList<Integer> available = new ArrayList<>();
-            ArrayList<String> items = new ArrayList<>();
-            for (int i = 0; i < 8; i++) {
-                if (String.valueOf(availableIns[i]).equals("")) {
-                    available.add(0);
-                } else {
-                    try {
-                        available.add(Integer.valueOf(String.valueOf(availableIns[i].getText())));
-                    } catch (Exception e){
-                        available.add(0);
-                    }
-                }
-                items.add(String.valueOf(itemNames[i].getText()));
-            }
-            if (activity != null) {
-                activity.startSession(available, items);
-                activity.showSnackbar("Session Started");
-            } else {
-                Log.d("ERROR", "Activity was null");
-            }
-        });
-        activity = (MainActivity)getActivity();
+
+        activity = (MainActivity) getActivity();
+
         itemNames = new EditText[] {binding.itemOne, binding.itemTwo, binding.itemThree, binding.itemFour, binding.itemFive, binding.itemSix, binding.itemSeven, binding.itemEight};
         availableIns = new EditText[] {binding.availableOne, binding.availableTwo, binding.availableThree, binding.availableFour, binding.availableFive, binding.availableSix, binding.availableSeven, binding.availableEight};
-        binding.newSession.setOnClickListener(view2 -> {
-            ArrayList<Integer> available = new ArrayList<>();
-            ArrayList<String> items = new ArrayList<>();
-            for (int i = 0; i < 8; i++) {
-                if (String.valueOf(availableIns[i]).equals("")) {
-                    available.add(0);
-                } else {
-                    try {
-                        available.add(Integer.valueOf(String.valueOf(availableIns[i].getText())));
-                    } catch (Exception e){
-                        available.add(0);
-                    }
-                }
-                items.add(String.valueOf(itemNames[i].getText()));
-            }
-            if (activity != null) {
-                activity.startSession(available, items);
-                activity.showSnackbar("Session Started");
-            } else {
-                Log.d("ERROR", "Activity was null");
-            }
-        });
+        binding.newSession.setOnClickListener(view2 -> startSession());
+
+        // Set data
         if (activity.hasItems()) {
             ArrayList<String> currentItems = activity.getItems();
             for (int i = 0; i < currentItems.size(); i++) {
@@ -98,9 +61,15 @@ public class SecondFragment extends Fragment {
             }
         }
         binding.joinCodeSecond.setText("Join Code: " + joinCode);
-        // Add a listener to the external server button
-        binding.externalServerButton.setOnClickListener(view1 -> {
-            NavHostFragment.findNavController(this).navigate(R.id.action_SecondFragment_to_externalServerFragment);
+
+        // Button listeners
+        binding.buttonSecond.setOnClickListener(view1 -> {
+            NavHostFragment.findNavController(SecondFragment.this).navigate(R.id.action_SecondFragment_to_FirstFragment);
+            startSession();
+        });
+
+        binding.chooseConfigButton.setOnClickListener(view1 -> {
+            NavHostFragment.findNavController(this).navigate(R.id.action_SecondFragment_to_chooseConfig);
         });
     }
 
@@ -108,6 +77,34 @@ public class SecondFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+
+    private void startSession() {
+        ArrayList<Integer> available = new ArrayList<>();
+        ArrayList<String> items = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            if (String.valueOf(availableIns[i]).isEmpty()) {
+                available.add(0);
+            } else {
+                try {
+                    available.add(Integer.valueOf(String.valueOf(availableIns[i].getText())));
+                } catch (Exception e){
+                    available.add(0);
+                }
+            }
+            items.add(String.valueOf(itemNames[i].getText()));
+        }
+        if (activity != null) {
+            if (activity.getConnectionType() == MainActivity.ConnectionType.DEVICE) {
+                activity.startSession(available, items);
+                activity.showSnackbar("Session Started");
+            } else {
+                activity.setServerData(available, items);
+            }
+
+        } else {
+            Log.d("ERROR", "Activity was null");
+        }
     }
 
 }

@@ -9,6 +9,7 @@ import android.util.Log;
 import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
@@ -19,6 +20,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 import networking.Network;
 import networking.OrderData;
@@ -34,7 +36,9 @@ public class MainActivity extends AppCompatActivity {
     public volatile ArrayList<Integer> available = new ArrayList<>();
     public FirstFragment fragment;
     public FragmentManager manager;
+    private ConnectionType connectionType;
     public static final short DEVICE_TYPE = 2; // 2 for kitchen
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,8 +64,16 @@ public class MainActivity extends AppCompatActivity {
 
         FragmentManager manager = getSupportFragmentManager();
 
+        Network.setActivity(this);
 
 
+    }
+
+    protected void setConnectionType(ConnectionType connectionType) {
+        this.connectionType = connectionType;
+    }
+    public ConnectionType getConnectionType() {
+        return connectionType;
     }
 
     @Override
@@ -134,12 +146,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void removeOrder(int orderIndex) {
+        if (connectionType == ConnectionType.EXTERNAL) {
+            Network.deleteOrder(orders.get(orderIndex).orderID);
+        }
         orders.remove(orderIndex);
         runOnUiThread(()->{
             if (fragment != null) {
                 fragment.showOrders(orders);
             }
         });
+    }
+
+    public void onExternalDisconnect() {
+        runOnUiThread(()->{
+            showSnackbar("Connection Lost!");
+            Navigation.findNavController(this, R.id.nav_host_fragment_content_main).navigate(R.id.chooseConfig);
+        });
+    }
+    protected void reset() {
+
+        orders = new ArrayList<>();
+        available = new ArrayList<>();
+        items = new ArrayList<>();
+
+
+
     }
     public void removeOrderByID(long orderID) {
         for (int index = 0; index < orders.size(); index++) {
@@ -164,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void addOrder(Order order) {
+        Log.v("MainActivity", "Order added!");
         orders.add(order);
         for (Order.OrderItem item: order.items) {
             available.set(item.itemID, available.get(item.itemID)-item.quantity);
@@ -184,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    protected static String getJoinCode() {
+    public static String getJoinCode() {
         try {
             final String[] ip = new String[1];
             Thread getIPThread = new Thread() {
@@ -243,10 +275,22 @@ public class MainActivity extends AppCompatActivity {
         Network.startSession(this);
     }
 
+    protected void setServerData(ArrayList<Integer> newAvailable, ArrayList<String> newItems) {
+        available = newAvailable;
+        items = newItems;
+
+        Network.setServerData();
+    }
+
     protected boolean hasItems() {return !items.isEmpty();}
     protected boolean hasAvailables() {return !available.isEmpty();}
     protected void showSnackbar(String message) {
         Snackbar.make(binding.toolbar, message, Snackbar.LENGTH_LONG)
                 .setAction(message, null).show();
+    }
+    public enum ConnectionType {
+        DEVICE,
+        EXTERNAL,
+        NONE
     }
 }

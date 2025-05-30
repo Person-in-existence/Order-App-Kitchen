@@ -16,7 +16,10 @@ import java.util.Arrays;
 
 import networking.packets.Header;
 import networking.packets.Packet;
+import networking.packets.Type0;
+import networking.packets.Type10;
 import networking.packets.Type2;
+import networking.packets.Type5;
 import networking.packets.Type9;
 
 class Server extends Thread {
@@ -26,6 +29,7 @@ class Server extends Thread {
     private MainActivity activity;
     private final ArrayList<Connection> connections = new ArrayList<>();
     private Connection serverConnection;
+    private boolean serverJoinReturned = false;
     protected Server() {
         try {
             socket = new ServerSocket(Network.PORT);
@@ -99,11 +103,66 @@ class Server extends Thread {
         }
     }
 
-    protected void joinServer(InetAddress ip) throws IOException {
-        end();
-        Socket socket = new Socket();
-        socket.connect(new InetSocketAddress(ip, Network.PORT));
-        serverConnection = new Connection(socket, true, null);
+    protected void joinServer(String ip, SuccessNotifier successNotifier){
+        new Thread() {
+            public void run() {
+                // Close existing stuff
+                end();
+                if (serverConnection != null) {
+                    if (serverConnection.isOpen()) {
+                        serverConnection.close(true);
+                    }
+                }
+
+                serverJoinReturned = false;
+
+                // Create connection
+                Socket socket = new Socket();
+                try {
+                    socket.connect(new InetSocketAddress(ip, Network.PORT));
+                } catch (IOException e) {
+                    successNotifier.success(false);
+                }
+                serverConnection = new Connection(socket, true, (ignored)-> activity.onExternalDisconnect());
+                // Send packet
+                Type0 packet = new Type0(new Header(Network.NETWORK_VERSION_NUMBER, (short) 0, serverConnection.getIdempotency()));
+                packet.setSendListener(success -> {
+                    serverJoinReturned = true;
+                    successNotifier.success(success);
+                    Log.d("networking.Network", "Returned, success: " + success);
+                });
+                serverConnection.sendPacket(packet);
+                // Fetch orders
+                Type10 orderPacket = new Type10(new Header(Network.NETWORK_VERSION_NUMBER, (short)10, serverConnection.getIdempotency()));
+                serverConnection.sendPacket(orderPacket);
+                try {
+                    Thread.sleep(2000); // Wait 2 seconds
+                } catch (InterruptedException ignored) {}
+                // If false, trigger activity.joinedServer(false)
+                if (!serverJoinReturned) {
+                    Log.w("networking.Network", "Server join failed to return");
+                    // Shut the connection - it hasn't worked.
+                    // Remove the listener first so we don't move around
+                    serverConnection.setListener(null);
+                    serverConnection.close(false);
+                    successNotifier.success(false);
+                }
+            }
+        }.start();
+
+    }
+
+    protected void setExternalData() {
+        if (serverConnection.isOpen()) {
+            Packet packet = new Type2(new Header(Network.NETWORK_VERSION_NUMBER, (short) 2, serverConnection.getIdempotency()), Network.getSessionData());
+            serverConnection.sendPacket(packet);
+        }
+    }
+    protected void deleteExternalOrder(long orderID) {
+        if (serverConnection.isOpen()) {
+            Packet packet = new Type5(new Header(Network.NETWORK_VERSION_NUMBER, (short) 5, serverConnection.getIdempotency()), orderID);
+            serverConnection.sendPacket(packet);
+        }
     }
 
     /**
@@ -144,12 +203,18 @@ class Server extends Thread {
 
     protected void end() {
         setAccepting(false);
+        running = false;
+
+        // Close the server socket (So we don't accept anything etc)
+        try {
+            socket.close();
+        } catch (IOException ignored) {}
         synchronized (connections) {
             for (Connection connection : connections) {
                 connection.close(true);
             }
         }
-        running = false;
+
     }
     public boolean isRunning() {
         return running;

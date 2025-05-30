@@ -3,14 +3,17 @@ package networking;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.orderappkitchen.MainActivity;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,10 +33,16 @@ public class Network {
     public static void scanDevices(NetworkScanner.NewDevice newDevice, NetworkScanner.Timeout timeout) {
         NetworkScanner.scan(newDevice, timeout);
     }
+    public static void setActivity(MainActivity activity) {
+        Network.activity = activity;
+        server.setActivity(activity);
+    }
 
     public static void startSession(MainActivity activity) {
         if (!server.isRunning()) {
             Network.activity = activity;
+            server.end();
+            server = new Server();
             server.setActivity(activity);
             server.setAccepting(true);
             server.start();
@@ -44,12 +53,17 @@ public class Network {
 
     }
 
+    public static void setServerData() {
+        server.setExternalData();
+    }
+
     public static void endSession() {
         server.end();
     }
 
-    public static void joinServer(String ip) {
-
+    public static void joinServer(String joinCode,SuccessNotifier successNotifier) {
+        Log.v("networking.Network", "Trying to join server: " + joinCode);
+        server.joinServer(subnet+joinCode, successNotifier);
     }
     public static long getNewOrderID() {
         return orderID.incrementAndGet();
@@ -57,6 +71,10 @@ public class Network {
 
     public static void removeOrderByID(long orderID) {
         activity.removeOrderByID(orderID);
+    }
+
+    public static void deleteOrder(long orderID) {
+        server.deleteExternalOrder(orderID);
     }
     public static void setSessionData(SessionData data) {
         activity.setSessionData(data);
@@ -95,8 +113,6 @@ public class Network {
         return receivedChecksum == actualChecksum;
     }
     public static boolean addRemoveItemsByAmount(Order amounts, int checksum) {
-        Log.w("networking.Network", "Received call to addRemoveItemsByAmount, not expected on a kitchen device. assert/return false");
-        assert false;
         return false;
     }
     public static OrderData getOrderData() {
@@ -112,7 +128,7 @@ public class Network {
         return MainActivity.DEVICE_TYPE;
     }
     protected static String getDeviceName() {
-        return "Names haven't been implemented yet.";
+        return MainActivity.getJoinCode();
     }
 
 

@@ -44,7 +44,7 @@ class Connection extends Thread {
     private int currentIdempotency;
     private DataOutputStream out;
     private DataInputStream in;
-    private final CloseListener listener;
+    private CloseListener listener;
     private boolean triesReconnect;
     private boolean acceptNewReconnect = false;
 
@@ -65,16 +65,22 @@ class Connection extends Thread {
         this.receivedIdempotencies = receivedIdempotencies;
         start();
     }
+    public void setListener(CloseListener listener) {
+        this.listener = listener;
+    }
     public void run() {
         try {
             out = new DataOutputStream(socket.getOutputStream());
             in = new DataInputStream(socket.getInputStream());
         } catch (IOException e) {
-            Log.e("networking.Connection", "Making socket parts failed for connection IP: "+ socket.getInetAddress().toString());
-            if (e.getMessage() != null) {
-                Log.e("networking.Connection", e.getMessage());
+            try {// Try/catch in case error is bc null socket
+                Log.e("networking.Connection", "Making socket parts failed for connection IP: " + socket.getInetAddress().toString());
+                if (e.getMessage() != null) {
+                    Log.e("networking.Connection", e.getMessage());
+                }
+                Log.e("networking.Connection", Arrays.toString(e.getStackTrace()));
             }
-            Log.e("networking.Connection", Arrays.toString(e.getStackTrace()));
+            catch (Exception ignored) {}
         }
         while (open) {
             try {
@@ -165,12 +171,15 @@ class Connection extends Thread {
      * @return Whether it was successful. If it tries reconnectTries times with no result, it returns false, otherwise true.
      */
     private boolean reconnectBackoff() {
+
         int delayMs = 1;
         int tries = 0;
         while (tries < reconnectTries) {
+            Log.v("networking.Connection", "Trying reconnect " + ip);
             // Try reconnection
             try {
                 reconnect();
+                Log.v("networking.Connection", "Reconnect success! "+ ip);
                 return true;
             } catch (IOException ignored) {}
             // Exponential backoff - double delay each time (using bit shift)
@@ -183,6 +192,7 @@ class Connection extends Thread {
 
             ++tries;
         }
+        Log.v("networking.Connection", "Reconnect failed too much. " + ip);
         return false;
     }
     protected void removeWaiting(Header header) {
@@ -246,7 +256,10 @@ class Connection extends Thread {
             Log.e("network.Connection", "Closing socket failed");
         }
         // Notify the close listener
-        listener.listen(this);
+        if (listener != null) {
+            listener.listen(this);
+        }
+
         // Unsend all waiting and queue packets
         for (Packet packet: queue) {
             packet.sent(false);
@@ -312,6 +325,9 @@ class Connection extends Thread {
         } else {
             success = Network.removeOrderChecksum(packet.getOrder().orderID, packet.getChecksum());
         }
+        // Send a confirm
+        Type3 confirm = new Type3(new Header(Network.NETWORK_VERSION_NUMBER, (short)3, header.idempotencyToken), success);
+        confirm.send(out);
 
         if (!success) {
             // If we failed, send a type 10 to request information

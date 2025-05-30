@@ -13,6 +13,8 @@
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
     <string name="total">Total:</string>
     <string name="delete_mode">Delete Mode</string>
-    <string name="use_external_server_button">Use External Server</string>
+    <string name="kitchen_mode_button">Select kitchen mode</string>
     <string name="scan_for_servers">Scan for servers</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
