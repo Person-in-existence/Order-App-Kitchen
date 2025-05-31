@@ -205,10 +205,16 @@ class Server extends Thread {
         setAccepting(false);
         running = false;
 
+        if (serverConnection != null) {
+            if (serverConnection.isOpen()) {
+                serverConnection.close(true);
+            }
+        }
+
         // Close the server socket (So we don't accept anything etc)
         try {
             socket.close();
-        } catch (IOException ignored) {}
+        } catch (Exception ignored) {}
         synchronized (connections) {
             for (Connection connection : connections) {
                 connection.close(true);

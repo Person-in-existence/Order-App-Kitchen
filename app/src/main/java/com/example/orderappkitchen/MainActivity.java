@@ -69,6 +69,20 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
+    @Override
+    protected void onDestroy() {
+        // Checks that it is actually finishing and not just changing
+        if (isFinishing()) {
+            // Notify server of disconnect so we don't mess with idempotencies
+            Log.d("MainActivity", "OnDestroy!");
+            try {
+                Network.disconnect();
+            } catch(Exception ignored) {}
+        }
+        super.onDestroy();
+    }
+    
     protected void setConnectionType(ConnectionType connectionType) {
         this.connectionType = connectionType;
     }

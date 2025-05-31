@@ -89,6 +89,14 @@ public class Network {
         // Update waiters with amounts
         server.sendWaiterUpdates(order, activity.makeChecksum(), connection);
     }
+    public static void disconnect() {
+        new Thread() {
+            public void run() {
+                server.end();
+            }
+        }.start();
+
+    }
     public static boolean addOrderChecksum(Order order, int receivedChecksum) {
         // Check that the order isn't already added
         if (activity.isOrderWithID(order.orderID)) {
