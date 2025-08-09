@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
         }
         super.onDestroy();
     }
-    
+
     protected void setConnectionType(ConnectionType connectionType) {
         this.connectionType = connectionType;
     }
